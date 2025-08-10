@@ -54,13 +54,13 @@ npm run dev
 ```
 MONGODB_URI=your_mongodb_atlas_connection_string
 JWT_SECRET=your_jwt_secret_key
-PORT=5000
+PORT=5001
 NODE_ENV=development
 ```
 
 ### Frontend (.env)
 ```
-VITE_API_URL=http://localhost:5000/api
+VITE_API_URL=http://localhost:5001/api
 ```
 
 ## API Endpoints
@@ -108,25 +108,25 @@ VITE_API_URL=http://localhost:5000/api
 
 ```bash
 # Register a new user
-curl -X POST http://localhost:5000/api/register \
+curl -X POST http://localhost:5001/api/register \
   -H "Content-Type: application/json" \
   -d '{"name":"Test User","email":"test@example.com","password":"password123"}'
 
 # Login
-curl -X POST http://localhost:5000/api/login \
+curl -X POST http://localhost:5001/api/login \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"password123"}'
 
 # Get available slots
-curl -X GET "http://localhost:5000/api/slots?from=2025-01-20&to=2025-01-27"
+curl -X GET "http://localhost:5001/api/slots?from=2025-01-20&to=2025-01-27"
 
 # Book a slot (use token from login)
-curl -X POST http://localhost:5000/api/book \
+curl -X POST http://localhost:5001/api/book \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{"slotId":"SLOT_ID_HERE"}'
 
 # Get user bookings
-curl -X GET http://localhost:5000/api/my-bookings \
+curl -X GET http://localhost:5001/api/my-bookings \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
