@@ -1,11 +1,10 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-
-// Middleware to verify JWT token
+    
 const authenticateToken = async (req, res, next) => {
   try {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    const token = authHeader && authHeader.split(' ')[1];
     
     if (!token) {
       return res.status(401).json({
@@ -16,10 +15,8 @@ const authenticateToken = async (req, res, next) => {
       });
     }
     
-    // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
-    // Get user from database
     const user = await User.findById(decoded.userId).select('-password');
     if (!user) {
       return res.status(401).json({
@@ -30,7 +27,6 @@ const authenticateToken = async (req, res, next) => {
       });
     }
     
-    // Add user to request object
     req.user = user;
     next();
     
@@ -63,7 +59,6 @@ const authenticateToken = async (req, res, next) => {
   }
 };
 
-// Middleware to check if user has required role
 const requireRole = (roles) => {
   return (req, res, next) => {
     if (!req.user) {
@@ -75,7 +70,6 @@ const requireRole = (roles) => {
       });
     }
     
-    // Check if user has required role
     if (!roles.includes(req.user.role)) {
       return res.status(403).json({
         error: {
@@ -89,13 +83,10 @@ const requireRole = (roles) => {
   };
 };
 
-// Middleware to check if user is admin
 const requireAdmin = requireRole(['admin']);
 
-// Middleware to check if user is patient
 const requirePatient = requireRole(['patient']);
 
-// Middleware to check if user can access their own resource or is admin
 const requireOwnershipOrAdmin = (resourceUserIdField = 'userId') => {
   return (req, res, next) => {
     if (!req.user) {
@@ -107,12 +98,10 @@ const requireOwnershipOrAdmin = (resourceUserIdField = 'userId') => {
       });
     }
     
-    // Admin can access any resource
     if (req.user.role === 'admin') {
       return next();
     }
-    
-    // Patient can only access their own resources
+        
     const resourceUserId = req.params[resourceUserIdField] || req.body[resourceUserIdField];
     
     if (req.user._id.toString() !== resourceUserId) {

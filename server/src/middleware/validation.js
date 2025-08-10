@@ -1,6 +1,5 @@
 const { body, query, validationResult } = require('express-validator');
 
-// Middleware to handle validation errors
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -16,7 +15,6 @@ const handleValidationErrors = (req, res, next) => {
   next();
 };
 
-// Validation rules for user registration
 const validateRegistration = [
   body('name')
     .trim()
@@ -39,7 +37,6 @@ const validateRegistration = [
   handleValidationErrors
 ];
 
-// Validation rules for user login
 const validateLogin = [
   body('email')
     .isEmail()
@@ -53,7 +50,6 @@ const validateLogin = [
   handleValidationErrors
 ];
 
-// Validation rules for slot queries
 const validateSlotQuery = [
   query('from')
     .isISO8601()
@@ -80,7 +76,6 @@ const validateSlotQuery = [
   handleValidationErrors
 ];
 
-// Validation rules for booking creation
 const validateBooking = [
   body('slotId')
     .isMongoId()
@@ -89,7 +84,6 @@ const validateBooking = [
   handleValidationErrors
 ];
 
-// Validation rules for user ID parameter
 const validateUserId = [
   body('userId')
     .isMongoId()
@@ -97,10 +91,8 @@ const validateUserId = [
   
   handleValidationErrors
 ];
-
-// Sanitization middleware
+  
 const sanitizeInput = (req, res, next) => {
-  // Trim whitespace from string fields
   Object.keys(req.body).forEach(key => {
     if (typeof req.body[key] === 'string') {
       req.body[key] = req.body[key].trim();

@@ -6,7 +6,6 @@ const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Generate JWT token
 const generateToken = (userId, role) => {
   return jwt.sign(
     { userId, role },
@@ -15,12 +14,10 @@ const generateToken = (userId, role) => {
   );
 };
 
-// POST /api/register - User registration
 router.post('/register', sanitizeInput, validateRegistration, async (req, res) => {
   try {
     const { name, email, password } = req.body;
     
-    // Check if user already exists
     const existingUser = await User.findByEmail(email);
     if (existingUser) {
       return res.status(409).json({
@@ -31,17 +28,15 @@ router.post('/register', sanitizeInput, validateRegistration, async (req, res) =
       });
     }
     
-    // Create new user
     const user = new User({
       name,
       email,
       password,
-      role: 'patient' // Default role
+      role: 'patient'
     });
     
     await user.save();
     
-    // Generate token
     const token = generateToken(user._id, user.role);
     
     res.status(201).json({
@@ -74,12 +69,10 @@ router.post('/register', sanitizeInput, validateRegistration, async (req, res) =
   }
 });
 
-// POST /api/login - User authentication
 router.post('/login', sanitizeInput, validateLogin, async (req, res) => {
   try {
     const { email, password } = req.body;
     
-    // Find user by email and include password for comparison
     const user = await User.findByEmail(email).select('+password');
     if (!user) {
       return res.status(401).json({
@@ -90,7 +83,6 @@ router.post('/login', sanitizeInput, validateLogin, async (req, res) => {
       });
     }
     
-    // Check password
     const isPasswordValid = await user.comparePassword(password);
     if (!isPasswordValid) {
       return res.status(401).json({
@@ -101,11 +93,9 @@ router.post('/login', sanitizeInput, validateLogin, async (req, res) => {
       });
     }
     
-    // Update last login
     user.lastLogin = new Date();
     await user.save();
     
-    // Generate token
     const token = generateToken(user._id, user.role);
     
     res.json({
@@ -128,11 +118,8 @@ router.post('/login', sanitizeInput, validateLogin, async (req, res) => {
   }
 });
 
-// GET /api/me - Get current user profile
 router.get('/me', authenticateToken, async (req, res) => {
   try {
-    // This route requires authentication, so we'll handle it in the main app
-    // with the authenticateToken middleware
     res.json({
       message: 'Profile retrieved successfully',
       data: {

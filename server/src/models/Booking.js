@@ -10,7 +10,7 @@ const bookingSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Slot',
     required: [true, 'Slot ID is required'],
-    unique: true // Prevent double booking
+    unique: true
   },
   status: {
     type: String,
@@ -29,11 +29,9 @@ const bookingSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Compound index for efficient queries
 bookingSchema.index({ userId: 1, createdAt: -1 });
 bookingSchema.index({ slotId: 1, status: 1 });
 
-// Virtual populate for user and slot details
 bookingSchema.virtual('user', {
   ref: 'User',
   localField: 'userId',
@@ -48,11 +46,9 @@ bookingSchema.virtual('slot', {
   justOne: true
 });
 
-// Ensure virtuals are serialized
 bookingSchema.set('toJSON', { virtuals: true });
 bookingSchema.set('toObject', { virtuals: true });
 
-// Static method to find user's bookings
 bookingSchema.statics.findByUser = function(userId) {
   return this.find({ userId })
     .populate('slot', 'startAt endAt')
@@ -60,7 +56,6 @@ bookingSchema.statics.findByUser = function(userId) {
     .sort({ createdAt: -1 });
 };
 
-// Static method to find all bookings (admin)
 bookingSchema.statics.findAllBookings = function() {
   return this.find({})
     .populate('slot', 'startAt endAt')
@@ -68,34 +63,28 @@ bookingSchema.statics.findAllBookings = function() {
     .sort({ createdAt: -1 });
 };
 
-// Static method to find booking by slot
 bookingSchema.statics.findBySlot = function(slotId) {
   return this.findOne({ slotId });
 };
 
-// Instance method to cancel booking
 bookingSchema.methods.cancel = async function() {
   this.status = 'cancelled';
   
-  // Mark slot as available again
   const Slot = mongoose.model('Slot');
   await Slot.findByIdAndUpdate(this.slotId, { isBooked: false });
   
   return this.save();
 };
 
-// Instance method to complete booking
 bookingSchema.methods.complete = function() {
   this.status = 'completed';
   return this.save();
 };
 
-// Pre-save middleware to mark slot as booked
 bookingSchema.pre('save', async function(next) {
   if (this.isNew) {
     const Slot = mongoose.model('Slot');
     
-    // Check if slot exists and is available
     const slot = await Slot.findById(this.slotId);
     if (!slot) {
       return next(new Error('Slot not found'));
@@ -105,7 +94,6 @@ bookingSchema.pre('save', async function(next) {
       return next(new Error('Slot is already booked'));
     }
     
-    // Mark slot as booked
     slot.isBooked = true;
     await slot.save();
   }
@@ -113,25 +101,20 @@ bookingSchema.pre('save', async function(next) {
   next();
 });
 
-// Pre-delete middleware to mark slot as available
 bookingSchema.pre('deleteOne', { document: true, query: false }, async function(next) {
   const Slot = mongoose.model('Slot');
   
-  // Mark slot as available again
   await Slot.findByIdAndUpdate(this.slotId, { isBooked: false });
   
   next();
 });
 
-// Pre-deleteMany middleware to mark slots as available
 bookingSchema.pre('deleteMany', async function(next) {
   const Slot = mongoose.model('Slot');
   
-  // Get all slot IDs that will be affected
   const bookings = await this.model.find(this.getFilter());
   const slotIds = bookings.map(booking => booking.slotId);
-  
-  // Mark all affected slots as available
+      
   if (slotIds.length > 0) {
     await Slot.updateMany(
       { _id: { $in: slotIds } },
