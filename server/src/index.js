@@ -29,7 +29,7 @@ app.use('/api/', limiter);
 
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://your-frontend-domain.vercel.app'] 
+    ? process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : true
     : ['http://localhost:5173', 'http://localhost:3000'],
   credentials: true
 }));
@@ -38,7 +38,12 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    port: PORT
+  });
 });
 
 app.use('/api', authRoutes);
@@ -85,16 +90,39 @@ app.use((err, req, res, next) => {
 
 const startServer = async () => {
   try {
-    await connectDB();
-          
-    await seedAdminUser();
-    await generateSlots();
-    
-    app.listen(PORT, () => {
+    // Always start listening on the port first
+    const server = app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📊 Environment: ${process.env.NODE_ENV}`);
       console.log(`🔗 Health check: http://localhost:${PORT}/api/health`);
     });
+
+    // Then try to connect to database
+    try {
+      await connectDB();
+      console.log('✅ Database connected successfully');
+      
+      // Only seed data in development
+      if (process.env.NODE_ENV !== 'production') {
+        await seedAdminUser();
+        await generateSlots();
+        console.log('✅ Development data seeded');
+      }
+    } catch (dbError) {
+      console.error('⚠️ Database connection failed:', dbError.message);
+      console.log('🔄 Server will continue running without database connection');
+      console.log('📝 Make sure MONGODB_URI environment variable is set');
+    }
+
+    // Handle graceful shutdown
+    process.on('SIGTERM', () => {
+      console.log('SIGTERM received, shutting down gracefully');
+      server.close(() => {
+        console.log('Process terminated');
+        process.exit(0);
+      });
+    });
+
   } catch (error) {
     console.error('Failed to start server:', error);
     process.exit(1);
